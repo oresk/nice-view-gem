@@ -8,37 +8,14 @@ void to_uppercase(char *str) {
     }
 }
 
-void rotate_canvas(lv_obj_t *canvas, lv_color_t cbuf[]) {
-    static lv_color_t cbuf_tmp[BUFFER_SIZE * BUFFER_SIZE];
-    memcpy(cbuf_tmp, cbuf, sizeof(cbuf_tmp));
+void rotate_canvas(lv_obj_t *canvas) {
+    uint8_t *buf = lv_canvas_get_draw_buf(canvas)->data;
+    static uint8_t buf_copy[CANVAS_BUF_SIZE];
+    memcpy(buf_copy, buf, sizeof(buf_copy));
 
-    lv_layer_t layer;
-    lv_canvas_init_layer(canvas, &layer);
-
-    lv_image_dsc_t img;
-    img.header.cf = LV_COLOR_FORMAT_NATIVE;
-    img.header.magic = LV_IMAGE_HEADER_MAGIC;
-    img.header.w = BUFFER_SIZE;
-    img.header.h = BUFFER_SIZE;
-    img.header.stride = BUFFER_SIZE * sizeof(lv_color_t);
-    img.data_size = BUFFER_SIZE * BUFFER_SIZE * sizeof(lv_color_t);
-    img.data = (const uint8_t *)cbuf_tmp;
-
-    lv_draw_image_dsc_t img_dsc;
-    lv_draw_image_dsc_init(&img_dsc);
-    img_dsc.rotation = 900;  /* 90 degrees in 0.1 degree units */
-    img_dsc.scale_x = LV_SCALE_NONE;
-    img_dsc.scale_y = LV_SCALE_NONE;
-    img_dsc.pivot.x = BUFFER_SIZE / 2;
-    img_dsc.pivot.y = BUFFER_SIZE / 2;
-    img_dsc.src = &img;
-
-    lv_canvas_fill_bg(canvas, LVGL_BACKGROUND, LV_OPA_COVER);
-
-    lv_area_t coords = {0, 0, BUFFER_SIZE - 1, BUFFER_SIZE - 1};
-    lv_draw_image(&layer, &img_dsc, &coords);
-
-    lv_canvas_finish_layer(canvas, &layer);
+    const uint32_t stride = lv_draw_buf_width_to_stride(CANVAS_SIZE, CANVAS_COLOR_FORMAT);
+    lv_draw_sw_rotate(buf_copy, buf, CANVAS_SIZE, CANVAS_SIZE, stride, stride,
+                      LV_DISPLAY_ROTATION_270, CANVAS_COLOR_FORMAT);
 }
 
 void fill_background(lv_obj_t *canvas) {
@@ -47,7 +24,7 @@ void fill_background(lv_obj_t *canvas) {
 
     lv_layer_t layer;
     lv_canvas_init_layer(canvas, &layer);
-    lv_area_t coords = {0, 0, BUFFER_SIZE - 1, BUFFER_SIZE - 1};
+    lv_area_t coords = {0, 0, CANVAS_SIZE - 1, CANVAS_SIZE - 1};
     lv_draw_rect(&layer, &rect_black_dsc, &coords);
     lv_canvas_finish_layer(canvas, &layer);
 }

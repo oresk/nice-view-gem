@@ -6,7 +6,12 @@
 #define SCREEN_WIDTH 68
 #define SCREEN_HEIGHT 160
 
-#define BUFFER_SIZE 68
+#define CANVAS_SIZE 68
+#define CANVAS_COLOR_FORMAT LV_COLOR_FORMAT_L8 // smallest type supported by sw_rotate
+#define CANVAS_BUF_SIZE                                                                            \
+    LV_CANVAS_BUF_SIZE(CANVAS_SIZE, CANVAS_SIZE, LV_COLOR_FORMAT_GET_BPP(CANVAS_COLOR_FORMAT),     \
+                       LV_DRAW_BUF_STRIDE_ALIGN)
+
 #define BUFFER_OFFSET_MIDDLE -44
 #define BUFFER_OFFSET_BOTTOM -129
 
@@ -32,7 +37,7 @@ struct status_state {
 };
 
 void to_uppercase(char *str);
-void rotate_canvas(lv_obj_t *canvas, lv_color_t cbuf[]);
+void rotate_canvas(lv_obj_t *canvas);
 void fill_background(lv_obj_t *canvas);
 void init_rect_dsc(lv_draw_rect_dsc_t *rect_dsc, lv_color_t bg_color);
 void init_line_dsc(lv_draw_line_dsc_t *line_dsc, lv_color_t color, uint8_t width);
