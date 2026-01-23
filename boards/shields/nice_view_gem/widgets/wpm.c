@@ -3,17 +3,19 @@
 #include "wpm.h"
 #include "../assets/custom_fonts.h"
 
-LV_IMG_DECLARE(gauge);
-LV_IMG_DECLARE(grid);
+LV_IMAGE_DECLARE(gauge);
+LV_IMAGE_DECLARE(grid);
 
-static void draw_gauge(lv_obj_t *canvas, const struct status_state *state) {
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
+static void draw_gauge(lv_obj_t *canvas, lv_layer_t *layer, const struct status_state *state) {
+    lv_draw_image_dsc_t img_dsc;
+    lv_draw_image_dsc_init(&img_dsc);
+    img_dsc.src = &gauge;
 
-    lv_canvas_draw_img(canvas, 16, 44 + BUFFER_OFFSET_MIDDLE, &gauge, &img_dsc);
+    lv_area_t coords = {16, 44 + BUFFER_OFFSET_MIDDLE, 16 + gauge.header.w - 1, 44 + BUFFER_OFFSET_MIDDLE + gauge.header.h - 1};
+    lv_draw_image(layer, &img_dsc, &coords);
 }
 
-static void draw_needle(lv_obj_t *canvas, const struct status_state *state) {
+static void draw_needle(lv_obj_t *canvas, lv_layer_t *layer, const struct status_state *state) {
     lv_draw_line_dsc_t line_dsc;
     init_line_dsc(&line_dsc, LVGL_FOREGROUND, 1);
 
@@ -48,21 +50,25 @@ static void draw_needle(lv_obj_t *canvas, const struct status_state *state) {
     int needleEndX = centerX + (int)(radius * cos(angleRad));
     int needleEndY = centerY + (int)(radius * sin(angleRad));
 
-    lv_point_t points[2] = {{needleStartX, needleStartY}, {needleEndX, needleEndY}};
-    lv_canvas_draw_line(canvas, points, 2, &line_dsc);
+    line_dsc.p1.x = needleStartX;
+    line_dsc.p1.y = needleStartY;
+    line_dsc.p2.x = needleEndX;
+    line_dsc.p2.y = needleEndY;
+    lv_draw_line(layer, &line_dsc);
 }
 
-static void draw_grid(lv_obj_t *canvas) {
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
+static void draw_grid(lv_obj_t *canvas, lv_layer_t *layer) {
+    lv_draw_image_dsc_t img_dsc;
+    lv_draw_image_dsc_init(&img_dsc);
+    img_dsc.src = &grid;
 
-    lv_canvas_draw_img(canvas, 0, 65 + BUFFER_OFFSET_MIDDLE, &grid, &img_dsc);
+    lv_area_t coords = {0, 65 + BUFFER_OFFSET_MIDDLE, grid.header.w - 1, 65 + BUFFER_OFFSET_MIDDLE + grid.header.h - 1};
+    lv_draw_image(layer, &img_dsc, &coords);
 }
 
-static void draw_graph(lv_obj_t *canvas, const struct status_state *state) {
+static void draw_graph(lv_obj_t *canvas, lv_layer_t *layer, const struct status_state *state) {
     lv_draw_line_dsc_t line_dsc;
     init_line_dsc(&line_dsc, LVGL_FOREGROUND, 2);
-    lv_point_t points[10];
 
     int baselineY = 97 + BUFFER_OFFSET_MIDDLE;
 
@@ -73,13 +79,23 @@ static void draw_graph(lv_obj_t *canvas, const struct status_state *state) {
     }
 
     int value = 0;
+    int prev_x = 0, prev_y = baselineY;
     for (int i = 0; i < 10; i++) {
         value = state->wpm[i];
         if (value > max) {
             value = max;
         }
-        points[i].x = 0 + i * 7.4;
-        points[i].y = baselineY - (value * 32 / max);
+        int cur_x = (int)(i * 7.4);
+        int cur_y = baselineY - (value * 32 / max);
+        if (i > 0) {
+            line_dsc.p1.x = prev_x;
+            line_dsc.p1.y = prev_y;
+            line_dsc.p2.x = cur_x;
+            line_dsc.p2.y = cur_y;
+            lv_draw_line(layer, &line_dsc);
+        }
+        prev_x = cur_x;
+        prev_y = cur_y;
     }
 #else
     int max = 0;
@@ -99,19 +115,29 @@ static void draw_graph(lv_obj_t *canvas, const struct status_state *state) {
         range = 1;
     }
 
+    int prev_x = 0, prev_y = baselineY;
     for (int i = 0; i < 10; i++) {
-        points[i].x = 0 + i * 7.4;
-        points[i].y = baselineY - (state->wpm[i] - min) * 32 / range;
+        int cur_x = (int)(i * 7.4);
+        int cur_y = baselineY - (state->wpm[i] - min) * 32 / range;
+        if (i > 0) {
+            line_dsc.p1.x = prev_x;
+            line_dsc.p1.y = prev_y;
+            line_dsc.p2.x = cur_x;
+            line_dsc.p2.y = cur_y;
+            lv_draw_line(layer, &line_dsc);
+        }
+        prev_x = cur_x;
+        prev_y = cur_y;
     }
 #endif
-
-    lv_canvas_draw_line(canvas, points, 10, &line_dsc);
 }
 
-static void draw_label(lv_obj_t *canvas, const struct status_state *state) {
+static void draw_label(lv_obj_t *canvas, lv_layer_t *layer, const struct status_state *state) {
     lv_draw_label_dsc_t label_left_dsc;
     init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_LEFT);
-    lv_canvas_draw_text(canvas, 0, 101 + BUFFER_OFFSET_MIDDLE, 25, &label_left_dsc, "WPM");
+    label_left_dsc.text = "WPM";
+    lv_area_t coords1 = {0, 101 + BUFFER_OFFSET_MIDDLE, 24, 101 + BUFFER_OFFSET_MIDDLE + 15};
+    lv_draw_label(layer, &label_left_dsc, &coords1);
 
     lv_draw_label_dsc_t label_dsc_wpm;
     init_label_dsc(&label_dsc_wpm, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
@@ -119,13 +145,20 @@ static void draw_label(lv_obj_t *canvas, const struct status_state *state) {
     char wpm_text[6] = {};
 
     snprintf(wpm_text, sizeof(wpm_text), "%d", state->wpm[9]);
-    lv_canvas_draw_text(canvas, 26, 101 + BUFFER_OFFSET_MIDDLE, 42, &label_dsc_wpm, wpm_text);
+    label_dsc_wpm.text = wpm_text;
+    lv_area_t coords2 = {26, 101 + BUFFER_OFFSET_MIDDLE, 26 + 41, 101 + BUFFER_OFFSET_MIDDLE + 15};
+    lv_draw_label(layer, &label_dsc_wpm, &coords2);
 }
 
 void draw_wpm_status(lv_obj_t *canvas, const struct status_state *state) {
-    draw_gauge(canvas, state);
-    draw_needle(canvas, state);
-    draw_grid(canvas);
-    draw_graph(canvas, state);
-    draw_label(canvas, state);
+    lv_layer_t layer;
+    lv_canvas_init_layer(canvas, &layer);
+
+    draw_gauge(canvas, &layer, state);
+    draw_needle(canvas, &layer, state);
+    draw_grid(canvas, &layer);
+    draw_graph(canvas, &layer, state);
+    draw_label(canvas, &layer, state);
+
+    lv_canvas_finish_layer(canvas, &layer);
 }
