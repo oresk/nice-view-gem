@@ -8,9 +8,7 @@
 
 #define CANVAS_SIZE 68
 #define CANVAS_COLOR_FORMAT LV_COLOR_FORMAT_L8 // smallest type supported by sw_rotate
-#define CANVAS_BUF_SIZE                                                                            \
-    LV_CANVAS_BUF_SIZE(CANVAS_SIZE, CANVAS_SIZE, LV_COLOR_FORMAT_GET_BPP(CANVAS_COLOR_FORMAT),     \
-                       LV_DRAW_BUF_STRIDE_ALIGN)
+#define CANVAS_BUF_SIZE (CANVAS_SIZE * CANVAS_SIZE) // 68x68 = 4624 bytes for L8 format
 
 #define BUFFER_OFFSET_MIDDLE -44
 #define BUFFER_OFFSET_BOTTOM -129
