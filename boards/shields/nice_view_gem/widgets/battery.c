@@ -24,12 +24,13 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     rect_dsc.bg_color = LVGL_BACKGROUND;
     canvas_draw_rect(canvas, start_x + 1, bar_y + 1, bar_w - 2, bar_h - 2, &rect_dsc);
 
-    // Left fill
+    // Left fill (drains to the left)
     int fill_w = (state->battery * (bar_w - 2)) / 100;
     if (fill_w > 0) {
         lv_draw_rect_dsc_init(&rect_dsc);
         rect_dsc.bg_color = LVGL_FOREGROUND;
-        canvas_draw_rect(canvas, start_x + 1, bar_y + 1, fill_w, bar_h - 2, &rect_dsc);
+        int fill_x = start_x + 1 + (bar_w - 2 - fill_w);
+        canvas_draw_rect(canvas, fill_x, bar_y + 1, fill_w, bar_h - 2, &rect_dsc);
     }
 
     // Draw right (peripheral) battery bar outline
@@ -41,13 +42,14 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     rect_dsc.bg_color = LVGL_BACKGROUND;
     canvas_draw_rect(canvas, right_x + 1, bar_y + 1, bar_w - 2, bar_h - 2, &rect_dsc);
 
-    // Right fill
+    // Right fill (drains to the left)
     if (state->peripheral_connected) {
         int pfill_w = (state->peripheral_battery * (bar_w - 2)) / 100;
         if (pfill_w > 0) {
             lv_draw_rect_dsc_init(&rect_dsc);
             rect_dsc.bg_color = LVGL_FOREGROUND;
-            canvas_draw_rect(canvas, right_x + 1, bar_y + 1, pfill_w, bar_h - 2, &rect_dsc);
+            int pfill_x = right_x + 1 + (bar_w - 2 - pfill_w);
+            canvas_draw_rect(canvas, pfill_x, bar_y + 1, pfill_w, bar_h - 2, &rect_dsc);
         }
     }
 
