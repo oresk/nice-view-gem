@@ -87,6 +87,7 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
         lv_draw_image_dsc_init(&img_dsc);
         canvas_draw_img(canvas, 35, text_y, &bolt, &img_dsc);
     }
+#endif // CONFIG_NICE_VIEW_GEM_BATTERY_BARS
 
 #else
     // Peripheral: simple battery display
