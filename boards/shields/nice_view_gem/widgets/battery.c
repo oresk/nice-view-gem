@@ -6,7 +6,9 @@ LV_IMG_DECLARE(bolt);
 
 void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
 #if !IS_ENABLED(CONFIG_ZMK_SPLIT) || IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-    // Battery bar dimensions
+
+#if IS_ENABLED(CONFIG_NICE_VIEW_GEM_BATTERY_BARS)
+    // === BAR MODE ===
     const int bar_w = 26;
     const int bar_h = 12;
     const int bar_y = 20;
@@ -23,13 +25,13 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     rect_dsc.bg_color = LVGL_BACKGROUND;
     canvas_draw_rect(canvas, left_x + 1, bar_y + 1, bar_w - 2, bar_h - 2, &rect_dsc);
 
-    // Left fill: dark = battery level, drains toward left (empty from left)
-    int fill_w = (state->battery * (bar_w - 2)) / 100;
+    // Left fill: dark anchored left, drains toward left (empty from right)
+    int left_pct = state->battery > 99 ? 99 : state->battery;
+    int fill_w = (left_pct * (bar_w - 2)) / 99;
     if (fill_w > 0) {
         lv_draw_rect_dsc_init(&rect_dsc);
         rect_dsc.bg_color = LVGL_FOREGROUND;
-        int fill_x = left_x + 1 + (bar_w - 2 - fill_w);
-        canvas_draw_rect(canvas, fill_x, bar_y + 1, fill_w, bar_h - 2, &rect_dsc);
+        canvas_draw_rect(canvas, left_x + 1, bar_y + 1, fill_w, bar_h - 2, &rect_dsc);
     }
 
     // Draw right (peripheral) battery bar outline
@@ -40,29 +42,16 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     rect_dsc.bg_color = LVGL_BACKGROUND;
     canvas_draw_rect(canvas, right_x + 1, bar_y + 1, bar_w - 2, bar_h - 2, &rect_dsc);
 
-    // Right fill: dark = battery level, drains toward right (empty from right)
+    // Right fill: dark anchored right, drains toward right (empty from left)
     if (state->peripheral_connected) {
-        int pfill_w = (state->peripheral_battery * (bar_w - 2)) / 100;
+        int right_pct = state->peripheral_battery > 99 ? 99 : state->peripheral_battery;
+        int pfill_w = (right_pct * (bar_w - 2)) / 99;
         if (pfill_w > 0) {
             lv_draw_rect_dsc_init(&rect_dsc);
             rect_dsc.bg_color = LVGL_FOREGROUND;
-            canvas_draw_rect(canvas, right_x + 1, bar_y + 1, pfill_w, bar_h - 2, &rect_dsc);
+            int pfill_x = right_x + 1 + (bar_w - 2 - pfill_w);
+            canvas_draw_rect(canvas, pfill_x, bar_y + 1, pfill_w, bar_h - 2, &rect_dsc);
         }
-    }
-
-    // Percentage text below bars
-    lv_draw_label_dsc_t label_dsc;
-    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_CENTER);
-
-    char text[10] = {};
-    sprintf(text, "%i%%", state->battery);
-    canvas_draw_text(canvas, left_x - 1, bar_y + bar_h + 3, bar_w + 2, &label_dsc, text);
-
-    if (state->peripheral_connected) {
-        sprintf(text, "%i%%", state->peripheral_battery);
-        canvas_draw_text(canvas, right_x - 1, bar_y + bar_h + 3, bar_w + 2, &label_dsc, text);
-    } else {
-        canvas_draw_text(canvas, right_x - 1, bar_y + bar_h + 3, bar_w + 2, &label_dsc, "--");
     }
 
     // Lightning icon between bars (only when charging)
@@ -71,6 +60,41 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
         lv_draw_image_dsc_init(&img_dsc);
         canvas_draw_img(canvas, 30, bar_y + 1, &bolt, &img_dsc);
     }
+
+#else
+    // === TEXT MODE ===
+    const int text_y = 22;
+
+    lv_draw_label_dsc_t label_dsc;
+    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
+
+    char text[10] = {};
+    int left_pct = state->battery > 99 ? 99 : state->battery;
+    sprintf(text, "%i%%", left_pct);
+    canvas_draw_text(canvas, 0, text_y, 28, &label_dsc, text);
+
+    if (state->peripheral_connected) {
+        int right_pct = state->peripheral_battery > 99 ? 99 : state->peripheral_battery;
+        sprintf(text, "%i%%", right_pct);
+        canvas_draw_text(canvas, 40, text_y, 28, &label_dsc, text);
+    } else {
+        canvas_draw_text(canvas, 40, text_y, 28, &label_dsc, "--");
+    }
+
+    // Charging bolt next to left percentage
+    if (state->charging) {
+        lv_draw_image_dsc_t img_dsc;
+        lv_draw_image_dsc_init(&img_dsc);
+        canvas_draw_img(canvas, 30, text_y, &bolt, &img_dsc);
+    }
+
+    // Divider line between percentages
+    lv_draw_rect_dsc_t line_dsc;
+    lv_draw_rect_dsc_init(&line_dsc);
+    line_dsc.bg_color = LVGL_FOREGROUND;
+    canvas_draw_rect(canvas, 33, text_y - 2, 1, 12, &line_dsc);
+#endif
+
 #else
     // Peripheral: simple battery display
     lv_draw_label_dsc_t label_left_dsc;
@@ -81,7 +105,8 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
 
     char text[10] = {};
-    sprintf(text, "%i%%", state->battery);
+    int pct = state->battery > 99 ? 99 : state->battery;
+    sprintf(text, "%i%%", pct);
     canvas_draw_text(canvas, 26, 19, 42, &label_right_dsc, text);
 
     if (state->charging) {

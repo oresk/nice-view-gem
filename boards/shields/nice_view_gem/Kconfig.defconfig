@@ -57,6 +57,10 @@ config NICE_VIEW_WIDGET_STATUS
 config NICE_VIEW_WIDGET_INVERTED
     bool "Invert display colors"
 
+config NICE_VIEW_GEM_BATTERY_BARS
+    bool "Show battery as bars instead of percentage text"
+    default y
+
 if !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
 
 config NICE_VIEW_WIDGET_STATUS
