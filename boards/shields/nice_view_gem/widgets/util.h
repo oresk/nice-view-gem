@@ -32,6 +32,8 @@ struct status_state {
     uint8_t layer_index;
     const char *layer_label;
     uint8_t wpm[10];
+    uint8_t peripheral_battery;
+    bool peripheral_connected;
 #else
     bool connected;
 #endif
