@@ -9,7 +9,7 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     // Battery bar dimensions
     const int bar_w = 26;
     const int bar_h = 12;
-    const int bar_y = 16;
+    const int bar_y = 20;
     const int left_x = 0;
     const int right_x = 68 - bar_w;
 
@@ -23,7 +23,7 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     rect_dsc.bg_color = LVGL_BACKGROUND;
     canvas_draw_rect(canvas, left_x + 1, bar_y + 1, bar_w - 2, bar_h - 2, &rect_dsc);
 
-    // Left fill (drains to the left)
+    // Left fill: dark = battery level, drains toward left (empty from left)
     int fill_w = (state->battery * (bar_w - 2)) / 100;
     if (fill_w > 0) {
         lv_draw_rect_dsc_init(&rect_dsc);
@@ -40,33 +40,29 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     rect_dsc.bg_color = LVGL_BACKGROUND;
     canvas_draw_rect(canvas, right_x + 1, bar_y + 1, bar_w - 2, bar_h - 2, &rect_dsc);
 
-    // Right fill (drains to the left)
+    // Right fill: dark = battery level, drains toward right (empty from right)
     if (state->peripheral_connected) {
         int pfill_w = (state->peripheral_battery * (bar_w - 2)) / 100;
         if (pfill_w > 0) {
             lv_draw_rect_dsc_init(&rect_dsc);
             rect_dsc.bg_color = LVGL_FOREGROUND;
-            int pfill_x = right_x + 1 + (bar_w - 2 - pfill_w);
-            canvas_draw_rect(canvas, pfill_x, bar_y + 1, pfill_w, bar_h - 2, &rect_dsc);
+            canvas_draw_rect(canvas, right_x + 1, bar_y + 1, pfill_w, bar_h - 2, &rect_dsc);
         }
     }
 
-    // Labels below bars
+    // Percentage text below bars
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_CENTER);
-    canvas_draw_text(canvas, left_x, bar_y + bar_h + 2, bar_w, &label_dsc, "L");
-    canvas_draw_text(canvas, right_x, bar_y + bar_h + 2, bar_w, &label_dsc, "R");
 
-    // Percentage text below bars
     char text[10] = {};
     sprintf(text, "%i%%", state->battery);
-    canvas_draw_text(canvas, left_x - 1, bar_y + bar_h + 13, bar_w + 2, &label_dsc, text);
+    canvas_draw_text(canvas, left_x - 1, bar_y + bar_h + 3, bar_w + 2, &label_dsc, text);
 
     if (state->peripheral_connected) {
         sprintf(text, "%i%%", state->peripheral_battery);
-        canvas_draw_text(canvas, right_x - 1, bar_y + bar_h + 13, bar_w + 2, &label_dsc, text);
+        canvas_draw_text(canvas, right_x - 1, bar_y + bar_h + 3, bar_w + 2, &label_dsc, text);
     } else {
-        canvas_draw_text(canvas, right_x - 1, bar_y + bar_h + 13, bar_w + 2, &label_dsc, "--");
+        canvas_draw_text(canvas, right_x - 1, bar_y + bar_h + 3, bar_w + 2, &label_dsc, "--");
     }
 
     // Lightning icon between bars (only when charging)
