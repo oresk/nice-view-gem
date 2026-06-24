@@ -11,38 +11,29 @@ LV_IMG_DECLARE(usb);
 static void draw_usb_connected(lv_obj_t *canvas) {
     lv_draw_image_dsc_t img_dsc;
     lv_draw_image_dsc_init(&img_dsc);
-    canvas_draw_img(canvas, 28, 2, &usb, &img_dsc);
+    canvas_draw_img(canvas, 45, 2, &usb, &img_dsc);
 }
 
 static void draw_ble_unbonded(lv_obj_t *canvas) {
     lv_draw_image_dsc_t img_dsc;
     lv_draw_image_dsc_init(&img_dsc);
-    canvas_draw_img(canvas, 27, 0, &bt_unbonded, &img_dsc);
+    canvas_draw_img(canvas, 44, 0, &bt_unbonded, &img_dsc);
 }
 #endif
 
 static void draw_ble_disconnected(lv_obj_t *canvas) {
     lv_draw_image_dsc_t img_dsc;
     lv_draw_image_dsc_init(&img_dsc);
-    canvas_draw_img(canvas, 32, 0, &bt_no_signal, &img_dsc);
+    canvas_draw_img(canvas, 49, 0, &bt_no_signal, &img_dsc);
 }
 
 static void draw_ble_connected(lv_obj_t *canvas) {
     lv_draw_image_dsc_t img_dsc;
     lv_draw_image_dsc_init(&img_dsc);
-    canvas_draw_img(canvas, 32, 2, &bt, &img_dsc);
+    canvas_draw_img(canvas, 49, 0, &bt, &img_dsc);
 }
 
 void draw_output_status(lv_obj_t *canvas, const struct status_state *state) {
-    // Draw outlined header bar (black border, white fill)
-    lv_draw_rect_dsc_t rect_dsc;
-    lv_draw_rect_dsc_init(&rect_dsc);
-    rect_dsc.bg_color = LVGL_FOREGROUND;
-    canvas_draw_rect(canvas, 0, 0, 68, 15, &rect_dsc);
-    lv_draw_rect_dsc_init(&rect_dsc);
-    rect_dsc.bg_color = LVGL_BACKGROUND;
-    canvas_draw_rect(canvas, 1, 1, 66, 13, &rect_dsc);
-
 #if !IS_ENABLED(CONFIG_ZMK_SPLIT) || IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     switch (state->selected_endpoint.transport) {
     case ZMK_TRANSPORT_USB:

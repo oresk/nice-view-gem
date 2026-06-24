@@ -58,7 +58,7 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     if (state->charging) {
         lv_draw_image_dsc_t img_dsc;
         lv_draw_image_dsc_init(&img_dsc);
-        canvas_draw_img(canvas, 30, bar_y + 1, &bolt, &img_dsc);
+        canvas_draw_img(canvas, 35, bar_y + 1, &bolt, &img_dsc);
     }
 
 #else
@@ -85,15 +85,8 @@ void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
     if (state->charging) {
         lv_draw_image_dsc_t img_dsc;
         lv_draw_image_dsc_init(&img_dsc);
-        canvas_draw_img(canvas, 30, text_y, &bolt, &img_dsc);
+        canvas_draw_img(canvas, 35, text_y, &bolt, &img_dsc);
     }
-
-    // Divider line between percentages
-    lv_draw_rect_dsc_t line_dsc;
-    lv_draw_rect_dsc_init(&line_dsc);
-    line_dsc.bg_color = LVGL_FOREGROUND;
-    canvas_draw_rect(canvas, 33, text_y - 2, 1, 12, &line_dsc);
-#endif
 
 #else
     // Peripheral: simple battery display
