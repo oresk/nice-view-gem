@@ -5,37 +5,89 @@
 LV_IMG_DECLARE(bolt);
 
 void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
+#if !IS_ENABLED(CONFIG_ZMK_SPLIT) || IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+    // Battery bar dimensions
+    const int bar_w = 24;
+    const int bar_h = 12;
+    const int bar_spacing = 4;
+    const int total_w = bar_w * 2 + bar_spacing;
+    const int start_x = (68 - total_w) / 2;
+    const int bar_y = 18;
+
+    lv_draw_rect_dsc_t rect_dsc;
+
+    // Draw left (central) battery bar outline
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_color = LVGL_FOREGROUND;
+    canvas_draw_rect(canvas, start_x, bar_y, bar_w, bar_h, &rect_dsc);
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_color = LVGL_BACKGROUND;
+    canvas_draw_rect(canvas, start_x + 1, bar_y + 1, bar_w - 2, bar_h - 2, &rect_dsc);
+
+    // Left fill
+    int fill_w = (state->battery * (bar_w - 2)) / 100;
+    if (fill_w > 0) {
+        lv_draw_rect_dsc_init(&rect_dsc);
+        rect_dsc.bg_color = LVGL_FOREGROUND;
+        canvas_draw_rect(canvas, start_x + 1, bar_y + 1, fill_w, bar_h - 2, &rect_dsc);
+    }
+
+    // Draw right (peripheral) battery bar outline
+    int right_x = start_x + bar_w + bar_spacing;
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_color = LVGL_FOREGROUND;
+    canvas_draw_rect(canvas, right_x, bar_y, bar_w, bar_h, &rect_dsc);
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_color = LVGL_BACKGROUND;
+    canvas_draw_rect(canvas, right_x + 1, bar_y + 1, bar_w - 2, bar_h - 2, &rect_dsc);
+
+    // Right fill
+    if (state->peripheral_connected) {
+        int pfill_w = (state->peripheral_battery * (bar_w - 2)) / 100;
+        if (pfill_w > 0) {
+            lv_draw_rect_dsc_init(&rect_dsc);
+            rect_dsc.bg_color = LVGL_FOREGROUND;
+            canvas_draw_rect(canvas, right_x + 1, bar_y + 1, pfill_w, bar_h - 2, &rect_dsc);
+        }
+    }
+
+    // Labels
+    lv_draw_label_dsc_t label_dsc;
+    init_label_dsc(&label_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_CENTER);
+    canvas_draw_text(canvas, start_x, bar_y + bar_h + 2, bar_w, &label_dsc, "L");
+    canvas_draw_text(canvas, right_x, bar_y + bar_h + 2, bar_w, &label_dsc, "R");
+
+    // Percentage text below bars
+    char text[10] = {};
+    sprintf(text, "%i%%", state->battery);
+    canvas_draw_text(canvas, start_x - 2, bar_y + bar_h + 13, bar_w + 4, &label_dsc, text);
+
+    if (state->peripheral_connected) {
+        sprintf(text, "%i%%", state->peripheral_battery);
+        canvas_draw_text(canvas, right_x - 2, bar_y + bar_h + 13, bar_w + 4, &label_dsc, text);
+    } else {
+        canvas_draw_text(canvas, right_x - 2, bar_y + bar_h + 13, bar_w + 4, &label_dsc, "--");
+    }
+
+    // Charging indicator
+    if (state->charging) {
+        lv_draw_image_dsc_t img_dsc;
+        lv_draw_image_dsc_init(&img_dsc);
+        canvas_draw_img(canvas, start_x + bar_w + 2, bar_y - 8, &bolt, &img_dsc);
+    }
+#else
+    // Peripheral: simple battery display
     lv_draw_label_dsc_t label_left_dsc;
     init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_LEFT);
+    canvas_draw_text(canvas, 0, 19, 25, &label_left_dsc, "BAT");
 
     lv_draw_label_dsc_t label_right_dsc;
     init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
 
     char text[10] = {};
-
-#if !IS_ENABLED(CONFIG_ZMK_SPLIT) || IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-    // Central: show local battery + peripheral battery if connected
-    sprintf(text, "%i%%", state->battery);
-    canvas_draw_text(canvas, 26, 16, 42, &label_right_dsc, text);
-
-    if (state->charging) {
-        lv_draw_image_dsc_t img_dsc;
-        lv_draw_image_dsc_init(&img_dsc);
-        canvas_draw_img(canvas, 62, 18, &bolt, &img_dsc);
-    }
-
-    if (state->peripheral_connected) {
-        canvas_draw_text(canvas, 0, 30, 25, &label_left_dsc, "PRL");
-        sprintf(text, "%i%%", state->peripheral_battery);
-        canvas_draw_text(canvas, 26, 30, 42, &label_right_dsc, text);
-    } else {
-        canvas_draw_text(canvas, 0, 16, 25, &label_left_dsc, "BAT");
-    }
-#else
-    // Peripheral: simple battery display
-    canvas_draw_text(canvas, 0, 19, 25, &label_left_dsc, "BAT");
     sprintf(text, "%i%%", state->battery);
     canvas_draw_text(canvas, 26, 19, 42, &label_right_dsc, text);
+
     if (state->charging) {
         lv_draw_image_dsc_t img_dsc;
         lv_draw_image_dsc_init(&img_dsc);
